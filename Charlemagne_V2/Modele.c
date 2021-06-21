@@ -1,6 +1,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdbool.h>
+
 typedef struct dossieretudiant dossieretudiant;
 struct dossieretudiant {
 	char nom[41];
@@ -12,11 +15,31 @@ struct dossieretudiant {
 dossieretudiant etudiants[1000];
 float moyennefrancais = 0;
 float moyennemathematiques = 0;
-void afficher();
+const char * filename = "./data.txt";
+#define BLOCK_SIZE 24
+#define BLOCK_COUNT 10
+
+char* strcasestr(const char* haystack, const char* needle) {
+    if (!needle[0]) return (char*) haystack;
+    for (size_t i = 0; haystack[i]; i++) {
+        bool matches = true;
+        for (size_t j = 0; needle[j]; j++) {
+            if (!haystack[i + j]) return NULL;
+            if (tolower((unsigned char)needle[j]) != 
+                tolower((unsigned char)haystack[i + j])) {
+                matches = false;
+                break;
+            }
+        }
+        if (matches) return (char *)(haystack + i);
+    }
+    return NULL;
+}
+
 void creer() {
 	system("cls");
 	printf("Creation d'un nouveau dossier\n\n");
-	for (int i = 0;i < 1000;i++) { // utilisation d'un while est peut etre plus appropriée
+	for (int i = 0;i < 1000;i++) {
 		printf("Saisissez le nom et le prenom de l'etudiant : ");
 		scanf(" %[^\n]", &etudiants[i].nom);
 		if (strlen(etudiants[i].nom)>=2) {
@@ -40,7 +63,7 @@ void afficher() {
 	printf("N\tNOM ET PRENOM\t\tAGE\tMOYENNE FRANCAIS\tMOYENNE MATHEMATIQUES\n");
 	for (int i = 0;i<1000;i++) {
 		if (etudiants[i].age != 0) {
-			printf("%d\t%s\t\t%d\t%f\t\t%f\n", i, etudiants[i].nom, etudiants[i].age, etudiants[i].francais, etudiants[i].mathematiques);
+			printf("%d\t%s\t\t%d\t%.2f\t\t%.2f\n", i, etudiants[i].nom, etudiants[i].age, etudiants[i].francais, etudiants[i].mathematiques);
 		}
 	}
 	system("pause");
@@ -59,7 +82,7 @@ void calcmoyenne() {
 	}
 	moyennefrancais /= nb;
 	moyennemathematiques /= nb;
-	printf("\nMoyenne generale en français : %.2f\nMoyenne generale en mathematiques : %.2f\n", moyennefrancais, moyennemathematiques);
+	printf("\nMoyenne generale en francais : %.2f\nMoyenne generale en mathematiques : %.2f\n", moyennefrancais, moyennemathematiques);
 	system("pause");
 }
 
@@ -68,24 +91,28 @@ void rechercher() {
 	printf("Rechercher un dossier\n\nSaisissez le nom de l'etudiant a rechercher dans les dossiers : ");
 	char rechercher[41];
 	scanf(" %[^\n]", &rechercher);
+	int found=0;
 	for (int i = 0;i < 1000;i++) {
 		if (etudiants[i].age != 0) {
-			if (strstr(etudiants[i].nom, rechercher)) {
-				printf("N\tNOM ET PRENOM\t\tAGE\tMOYENNE FRANCAIS\tMOYENNE MATHEMATIQUES\n");
-				printf("%d\t%s\t\t%d\t%f\t\t%f\n", i, etudiants[i].nom, etudiants[i].age, etudiants[i].francais, etudiants[i].mathematiques);
-				system("pause");
+			if (strcasestr(etudiants[i].nom, rechercher)) {
+				found++;
+				if(found==1){
+					printf("N\tNOM ET PRENOM\t\tAGE\tMOYENNE FRANCAIS\tMOYENNE MATHEMATIQUES\n");
+				}
+				printf("%d\t%s\t\t%d\t%.2f\t\t%.2f\n", i, etudiants[i].nom, etudiants[i].age, etudiants[i].francais, etudiants[i].mathematiques);
 			}
-			else {
-				printf("\nAucun etudiant portant ce nom ou prenom n'a ete trouve !\n");
-				system("pause");
-			}
-		}
+			
+		}	
 	}
+	if(found==0){
+		printf("\nAucun etudiant portant ce nom ou prenom n'a ete trouve !\n");
+	}	
+	system("pause");
 }
 
 void supprimer() {
 	system("cls");
-	printf("Supprimer un dossier\nSaisissez le numéro du dossier à supprimer : ");
+	printf("Supprimer un dossier\nSaisissez le numero du dossier a supprimer : ");
 	int rechercher=0;
 	scanf("%d", &rechercher);
 	for (int i = 0;i < 1000;i++) {
@@ -94,24 +121,77 @@ void supprimer() {
 		}
 		else {
 			if (etudiants[i].age != 0) {
-				etudiants[i].nom = " ";
+				//etudiants[i].nom = " ";
 				etudiants[i].age = 0;
 				etudiants[i].francais = 0;
 				etudiants[i].mathematiques = 0;
-				printf("\nLe dossier portant le numéro %d a bien ete supprime !", rechercher);
+				printf("\nLe dossier portant le numero %d a bien ete supprime !\n", rechercher);
 				system("pause");
 			}
 			else {
-				printf("\nErreur : Il n'y a pas de dossier portant le numéro %d !", rechercher);
+				printf("\nErreur : Il n'y a pas de dossier portant le numero %d !\n", rechercher);
 				system("pause");
 			}
 		}
 	}
 }
 
+void writeFile(const char * filename) {
+    char buffer[ BLOCK_SIZE ];
+    int returnCode;
+    int index;
+    FILE * stream = fopen( filename, "w" );
+    if ( stream == NULL ) {
+        fprintf( stderr, "Cannot open file for writing\n" );
+        exit( -1 );
+    }
+    for( index=0; index<BLOCK_COUNT; index++ ) {
+        int value = rand() % 1000;
+        sprintf(buffer, "| User %3d | Pass %3d |\n", value, 999-value);
+        if (1 != fwrite(buffer, BLOCK_SIZE, 1, stream)) {
+            fprintf(stderr, "Cannot write block in file\n");
+        }
+    }
+    returnCode = fclose( stream );
+    if (returnCode == EOF) {
+        fprintf(stderr, "Cannot close file\n");
+        exit(-1);
+    }
+}
+
+char readFile( const char * filename ) {
+    int returnCode;
+    int count = 2;
+    FILE * stream = fopen(filename, "r");
+    if (stream == NULL) {
+        fprintf(stderr, "Cannot open file for reading\n");
+        exit(-1);
+    }
+    {
+        char buffer[BLOCK_SIZE * count + 1];
+		fread(buffer, BLOCK_SIZE, count, stream);
+        buffer[BLOCK_SIZE * count] = '\0';
+        return(buffer);
+    }
+    returnCode = fclose( stream );
+    if (returnCode == EOF) {
+        fprintf(stderr, "Cannot close file\n");
+        exit(-1);
+    }
+	system("pause");
+}
+
+
 void sauvegarder() {
 	system("cls");
-	printf("Sauvegarder les dossiers");
+	printf("Sauvegarder les dossiers\n");
+	// for (int i = 0;i < 1000;i++) {
+	// 	if (etudiants[i].age != 0) {
+	
+	// 	}
+	// }
+	printf("%c\n",readFile(filename));
+	system("pause");
 }
 
 void quitter() {
